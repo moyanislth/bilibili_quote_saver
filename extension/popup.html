@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bilibili Quote Saver</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <div>
+          <h1>Bilibili Quote Saver</h1>
+          <p>按一次开始记录，再按一次停止并汇总字幕</p>
+        </div>
+        <button id="toggle-capture" class="primary-button">开始记录</button>
+      </header>
+
+      <section class="toolbar">
+        <span id="count-label">0 条收藏</span>
+        <button id="clear-all" class="text-button">清空</button>
+      </section>
+
+      <section id="status" class="status" aria-live="polite"></section>
+      <section id="captures" class="captures"></section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
