@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bilibili Quote Saver",
   "description": "在 B 站视频中一键收藏当前字幕与时间戳。",
-  "version": "1.3.0",
+  "version": "1.0.0",
   "icons": {
     "16": "icon.svg",
     "48": "icon.svg",
@@ -24,7 +24,12 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Bilibili Quote Saver"
+    "default_title": "Bilibili Quote Saver",
+    "default_icon": {
+      "16": "icon.svg",
+      "48": "icon.svg",
+      "128": "icon.svg"
+    }
   },
   "commands": {
     "save-current-subtitle": {
@@ -48,4 +53,3 @@
     }
   ]
 }
-
