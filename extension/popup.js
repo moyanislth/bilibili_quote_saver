@@ -3,11 +3,9 @@ const statusElement = document.getElementById('status');
 const countLabel = document.getElementById('count-label');
 const toggleButton = document.getElementById('toggle-capture');
 const clearButton = document.getElementById('clear-all');
-const recordingTimerEl = document.getElementById('recording-timer');
 const searchInput = document.getElementById('search-input');
 const storageUsageEl = document.getElementById('storage-usage');
 const langSelect = document.getElementById('lang-select');
-let recordingTimerInterval = null;
 let livePreviewInterval = null;
 let searchQuery = '';
 let tagFilter = '';
@@ -113,7 +111,7 @@ async function syncToggleButton() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) {
       toggleButton.textContent = '开始记录';
-      stopRecordingTimer();
+      stopLivePreview();
       return;
     }
 
@@ -125,15 +123,12 @@ async function syncToggleButton() {
     toggleButton.textContent = response?.active ? '停止并汇总' : '开始记录';
 
     if (response?.active) {
-      startRecordingTimer(response.startedAt || Date.now());
       startLivePreview(tab.id);
     } else {
-      stopRecordingTimer();
       stopLivePreview();
     }
   } catch {
     toggleButton.textContent = '开始记录';
-    stopRecordingTimer();
     stopLivePreview();
   }
 }
@@ -393,37 +388,6 @@ function formatDate(value) {
   const hour = String(date.getHours()).padStart(2, '0');
   const minute = String(date.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day} ${hour}:${minute}`;
-}
-
-function startRecordingTimer(startedAt) {
-  if (recordingTimerInterval) {
-    clearInterval(recordingTimerInterval);
-  }
-
-  recordingTimerEl.style.display = '';
-
-  const updateTimer = () => {
-    const elapsed = Date.now() - startedAt;
-    recordingTimerEl.textContent = `Recording: ${formatDuration(elapsed)}`;
-  };
-
-  updateTimer();
-  recordingTimerInterval = setInterval(updateTimer, 1000);
-}
-
-function stopRecordingTimer() {
-  if (recordingTimerInterval) {
-    clearInterval(recordingTimerInterval);
-    recordingTimerInterval = null;
-  }
-  recordingTimerEl.style.display = 'none';
-}
-
-function formatDuration(ms) {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function formatStorageSize(bytes) {
