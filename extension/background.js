@@ -112,6 +112,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return undefined;
   }
 
+  if (message?.type === 'STT_START_REQUEST') {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No tab id' });
+      return true;
+    }
+    startSTT(tabId, message.lang || 'zh-CN')
+      .then(sendResponse)
+      .catch((e) => sendResponse({ success: false, error: e.message }));
+    return true;
+  }
+
+  if (message?.type === 'STT_STOP_REQUEST') {
+    stopSTT().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === 'STT_FINISHED') {
+    // Relay the final transcript back to the content script
+    if (sttTargetTabId) {
+      notifyTab(sttTargetTabId, true, '语音识别已完成');
+      chrome.tabs.sendMessage(sttTargetTabId, {
+        type: 'STT_RESULT',
+        text: message.text || ''
+      }).catch(() => {});
+    }
+    return undefined;
+  }
+
   return undefined;
 });
 
@@ -324,4 +353,54 @@ async function notifyTab(tabId, success, message) {
   } catch {
     return;
   }
+}
+
+// ── Speech-to-Text via Offscreen Document ──
+let sttTargetTabId = null;
+
+async function ensureOffscreenDocument() {
+  const existing = await chrome.offscreen.hasDocument();
+  if (existing) return;
+
+  await chrome.offscreen.createDocument({
+    url: 'offscreen.html',
+    reasons: ['USER_MEDIA'],
+    justification: 'Capture tab audio for speech-to-text transcription'
+  });
+}
+
+async function startSTT(tabId, lang) {
+  sttTargetTabId = tabId;
+  await ensureOffscreenDocument();
+
+  // Get a stream ID for the target tab's audio
+  const streamId = await new Promise((resolve, reject) => {
+    chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }, (id) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve(id);
+      }
+    });
+  });
+
+  // Start capture in the offscreen document
+  return chrome.runtime.sendMessage({
+    type: 'STT_START',
+    streamId,
+    lang
+  });
+}
+
+async function stopSTT() {
+  try {
+    await chrome.runtime.sendMessage({ type: 'STT_STOP' });
+  } catch { /* offscreen may already be closed */ }
+
+  sttTargetTabId = null;
+
+  // Close the offscreen document
+  try {
+    await chrome.offscreen.closeDocument();
+  } catch { /* already closed */ }
 }

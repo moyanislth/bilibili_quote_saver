@@ -10,7 +10,8 @@
   },
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "tabCapture"
   ],
   "host_permissions": [
     "https://www.bilibili.com/*",

@@ -57,6 +57,7 @@
     },
     lastVideoUrl: '',
     lastSessionEndedAt: 0,
+    sttActive: false,
     subtitleCache: null,
     subtitleCacheBvid: ''
   };
@@ -82,6 +83,11 @@
     if (message?.type === 'GET_SESSION_PREVIEW') {
       sendResponse({ items: state.session.items.slice(-5) });
       return true;
+    }
+
+    if (message?.type === 'STT_RESULT') {
+      handleSTTResult(message.text);
+      return undefined;
     }
 
     if (message?.type === 'SHOW_TOAST') {
@@ -230,6 +236,7 @@
       state.session.startedTimestampSec = 0;
       state.session.items = [];
       updateRecordingIndicator(false);
+      stopSTTIfActive();
     }
 
     state.lastVideoUrl = currentUrl;
@@ -530,6 +537,7 @@
     state.session.items = [];
     updateRecordingIndicator(false);
     clearPersistedSession();
+    stopSTTIfActive();
     state.lastSessionEndedAt = endTimestampSec;
 
     // Prefer API data for perfect, unfragmented text
@@ -551,7 +559,13 @@
     // Fallback to DOM-scraped items
     if (!text) {
       if (!items.length) {
-        const hint = '该视频暂无可用字幕，请在B站播放器中开启CC字幕或AI生成字幕';
+        // Trigger STT as last resort
+        if (!state.sttActive) {
+          state.sttActive = true;
+          chrome.runtime.sendMessage({ type: 'STT_START_REQUEST', lang: 'zh-CN' })
+            .catch(() => {});
+        }
+        const hint = '该视频暂无可用字幕，正在尝试语音识别…';
         return {
           success: false,
           active: false,
@@ -614,6 +628,22 @@
       timestampSec: getCurrentTime(),
       updatedAt: Date.now()
     });
+  }
+
+  function handleSTTResult(text) {
+    if (!text || !state.session.active) return;
+    state.session.items.push({
+      text,
+      timestampSec: getCurrentTime(),
+      updatedAt: Date.now()
+    });
+  }
+
+  function stopSTTIfActive() {
+    if (state.sttActive) {
+      state.sttActive = false;
+      chrome.runtime.sendMessage({ type: 'STT_STOP_REQUEST' }).catch(() => {});
+    }
   }
 
   // ---------------------------------------------------------------------------
