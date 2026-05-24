@@ -6,6 +6,7 @@ const clearButton = document.getElementById('clear-all');
 const searchInput = document.getElementById('search-input');
 const storageUsageEl = document.getElementById('storage-usage');
 const langSelect = document.getElementById('lang-select');
+const exportBtn = document.getElementById('export-btn');
 let livePreviewInterval = null;
 let searchQuery = '';
 let tagFilter = '';
@@ -34,16 +35,15 @@ document.getElementById('sort-select').addEventListener('change', handleSortChan
 if (langSelect) {
   langSelect.addEventListener('change', handleLangChange);
 }
+exportBtn.addEventListener('click', handleExport);
 
 async function init() {
   try {
     await syncToggleButton();
     await renderCaptures();
     updateStorageUsage();
-    initExportDropdown();
     initImportButton();
     initLangSelect();
-    document.addEventListener('click', closeAllDropdowns);
   } catch {
     setStatus('加载失败', true);
   }
@@ -455,7 +455,7 @@ async function initLangSelect() {
   }
 }
 
-async function handleExport(format = 'json') {
+async function handleExport() {
   const response = await chrome.runtime.sendMessage({ type: 'GET_CAPTURES' });
   const captures = Array.isArray(response?.captures) ? response.captures : [];
 
@@ -464,74 +464,17 @@ async function handleExport(format = 'json') {
     return;
   }
 
-  let content, mimeType, extension;
-  if (format === 'txt') {
-    content = buildExportTxt(captures);
-    mimeType = 'text/plain';
-    extension = 'txt';
-  } else if (format === 'markdown') {
-    content = buildExportMarkdown(captures);
-    mimeType = 'text/markdown';
-    extension = 'md';
-  } else {
-    content = JSON.stringify(captures, null, 2);
-    mimeType = 'application/json';
-    extension = 'json';
-  }
-
-  const blob = new Blob([content], { type: mimeType });
+  const content = JSON.stringify(captures, null, 2);
+  const blob = new Blob([content], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `bilibili-quotes-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  a.download = `bilibili-quotes-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   setStatus('已导出收藏');
-}
-
-function buildExportTxt(captures) {
-  const parts = captures.map((c) => {
-    const range = c.endTimestampLabel
-      ? `${c.timestampLabel || '00:00'} - ${c.endTimestampLabel}`
-      : c.timestampLabel || '00:00';
-    const lineCount = c.lineCount ? `${c.lineCount}条字幕` : '';
-    const date = formatDate(c.createdAt).split(' ')[0];
-    return `[${c.videoTitle || '未命名视频'}]\n时间: ${range} | ${lineCount} | ${date}\n${c.text || ''}`;
-  });
-  return parts.join('\n\n---\n\n');
-}
-
-function buildExportMarkdown(captures) {
-  const parts = captures.map((c) => {
-    const range = c.endTimestampLabel
-      ? `${c.timestampLabel || '00:00'} - ${c.endTimestampLabel}`
-      : c.timestampLabel || '00:00';
-    const lineCount = c.lineCount ? `${c.lineCount} 条` : '';
-    const date = formatDate(c.createdAt).split(' ')[0];
-    const url = c.jumpUrl || c.videoUrl || '';
-    const quoteLines = (c.text || '').split('\n').map((l) => `> ${l}`).join('\n');
-    return `## ${c.videoTitle || '未命名视频'}\n- **时间:** ${range}\n- **字幕数:** ${lineCount}\n- **来源:** [回到原视频](${url})\n- **收藏于:** ${date}\n\n${quoteLines}`;
-  });
-  return `# Bilibili Quote Saver — 导出\n\n${parts.join('\n\n---\n\n')}`;
-}
-
-function initExportDropdown() {
-  const toggle = document.getElementById('export-toggle');
-  const menu = document.getElementById('export-menu');
-  if (!toggle || !menu) return;
-
-  toggle.addEventListener('click', () => {
-    menu.classList.toggle('open');
-  });
-
-  menu.querySelectorAll('button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      menu.classList.remove('open');
-      handleExport(btn.dataset.format);
-    });
-  });
 }
 
 function initImportButton() {
@@ -593,15 +536,6 @@ function initImportButton() {
     }
 
     importInput.value = '';
-  });
-}
-
-function closeAllDropdowns(e) {
-  document.querySelectorAll('.dropdown-menu.open').forEach((m) => {
-    const dd = m.closest('.dropdown');
-    if (dd && !dd.contains(e.target)) {
-      m.classList.remove('open');
-    }
   });
 }
 

@@ -359,46 +359,6 @@ button:active {
   border-color: #2563eb;
 }
 
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  min-width: 100px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
-  overflow: hidden;
-}
-
-.dropdown-menu.open {
-  display: block;
-}
-
-.dropdown-menu button {
-  display: block;
-  width: 100%;
-  padding: 7px 12px;
-  text-align: left;
-  background: none;
-  border: none;
-  font-size: 12px;
-  color: #0f172a;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.dropdown-menu button:hover {
-  background: #f1f5f9;
-}
-
 mark {
   background: #fef08a;
   color: #0f172a;
@@ -650,20 +610,6 @@ mark {
 
   .lang-select:focus {
     border-color: #3b82f6;
-  }
-
-  .dropdown-menu {
-    background: #1e293b;
-    border-color: #334155;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .dropdown-menu button {
-    color: #e2e8f0;
-  }
-
-  .dropdown-menu button:hover {
-    background: #334155;
   }
 
   mark {
